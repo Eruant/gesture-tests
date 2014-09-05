@@ -52,16 +52,22 @@ GestureSource.prototype.play = function () {
   this.clear();
 
   $(this.video).objectdetect("all", {
-    classifier: objectdetect.handfist
+    classifier: objectdetect.handopen
   }, function (coords) {
-    _this.render('fist', coords);
+    _this.render('hand', coords);
   });
 
-  $(this.video).objectdetect("all", {
-    classifier: objectdetect.eye
-  }, function (coords) {
-    _this.render('eye', coords);
-  });
+  //$(this.video).objectdetect("all", {
+    //classifier: objectdetect.handfist
+  //}, function (coords) {
+    //_this.render('fist', coords);
+  //});
+
+  //$(this.video).objectdetect("all", {
+    //classifier: objectdetect.eye
+  //}, function (coords) {
+    //_this.render('eye', coords);
+  //});
 
   window.requestAnimationFrame(this.play.bind(this));
 
