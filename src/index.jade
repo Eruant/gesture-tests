@@ -6,21 +6,20 @@ html
     style.
       video,
       canvas {
+        width: 100vw;
+        height: 75vw; /* 100 / 75 = 1.333*/
+        max-height: 100vh;
+        max-width: 140vh; /* 640/480 = 1.3333*/
+        margin: auto;
         position: absolute;
         top: 0;
+        bottom: 0;
         left: 0;
+        right: 0;
       }
 
   body
 
-    video#webcam
-
-    script(src="js/lib/objectdetect.js")
-    script(src="js/lib/objectdetect.eye.js")
-    script(src="js/lib/objectdetect.handfist.js")
-    script(src="js/lib/objectdetect.handopen.js")
-
-    script(src="js/lib/jquery.js")
-    script(src="js/lib/jquery.objectdetect.js")
+    video#webcam(width="640", height="480")
 
     script(src="js/base.js")
