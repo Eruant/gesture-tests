@@ -13,6 +13,12 @@ var GestureSource = function (id) {
 
   this.el = id;
 
+  this.currentColour = {
+    r: 100,
+    g: 100,
+    b: 100
+  };
+
   navigator.getUserMedia({
     video: true,
     audio: false
@@ -75,16 +81,19 @@ GestureSource.prototype.drawVideo = function () {
 };
 
 GestureSource.prototype.blend = function () {
-  var width = this.canvasRaw.width;
-  var height = this.canvasRaw.height;
+
+  var width, height, sourceData, blendedData;
+
+  width = this.canvasRaw.width;
+  height = this.canvasRaw.height;
   // get webcam image data
-  var sourceData = this.ctxRaw.getImageData(0, 0, width, height);
+  sourceData = this.ctxRaw.getImageData(0, 0, width, height);
   // create an image if the previous image doesn’t exist
   if (!this.lastImageData) {
     this.lastImageData = this.ctxRaw.getImageData(0, 0, width, height);
   }
   // create a ImageData instance to receive the blended result
-  var blendedData = this.ctxRaw.createImageData(width, height);
+  blendedData = this.ctxRaw.createImageData(width, height);
   // blend the 2 images
   this.differenceAccuracy(blendedData.data, sourceData.data, this.lastImageData.data);
   // draw the result in a canvas
@@ -117,7 +126,11 @@ GestureSource.prototype.difference = function (target, data1, data2) {
 };
 
 GestureSource.prototype.threshold = function (value) {
-  return (value > 0x15) ? 0xFF : 0;
+  return (value > 0x15) ? value : 0;
+};
+
+GestureSource.prototype.aboveThreshold = function (value) {
+  return (value > 0x15) ? true : false;
 };
 
 GestureSource.prototype.differenceAccuracy = function (target, data1, data2) {
@@ -125,16 +138,61 @@ GestureSource.prototype.differenceAccuracy = function (target, data1, data2) {
     return null;
   }
   var i = 0;
+  var randomColours = this.cycleColour();
   while (i < (data1.length * 0.25)) {
     var average1 = (data1[4 * i] + data1[4 * i + 1] + data1[4 * i + 2]) / 3;
     var average2 = (data2[4 * i] + data2[4 * i + 1] + data2[4 * i + 2]) / 3;
-    var diff = this.threshold(this.fastAbs(average1 - average2));
-    target[4 * i] = diff;
-    target[4 * i + 1] = diff;
-    target[4 * i + 2] = diff;
-    target[4 * i + 3] = 0xFF;
+    //var diff = this.threshold(this.fastAbs(average1 - average2));
+    //target[4 * i] = diff;
+    //target[4 * i + 1] = diff;
+    //target[4 * i + 2] = diff;
+    //target[4 * i + 3] = 0xFF;
+    var diff = this.aboveThreshold(this.fastAbs(average1 - average2));
+    if (diff) {
+      //var randomColours = this.chooseRandom(data1[4 * 1], data1[4 * i + 1], data1[4 * i + 2]);
+      target[4 * i] = (randomColours.r + data1[4 * i]) / 2;
+      target[4 * i + 1] = (randomColours.g + data1[4 * i + 1]) / 2;
+      target[4 * i + 2] = (randomColours.b + data1[4 * i + 2]) / 2;
+      target[4 * i + 3] = 0xFF;
+    }
     ++i;
   }
+};
+
+GestureSource.prototype.cycleColour = function () {
+
+  var colour = {
+    r: this.currentColour.r + (Math.random() * 10 - 5),
+    b: this.currentColour.b + (Math.random() * 10 - 5),
+    g: this.currentColour.g + (Math.random() * 10 - 5)
+  };
+  
+  colour.r = (colour.r >= 255 ? 255 : (colour.r <= 0 ? 0 : colour.r));
+  colour.g = (colour.g >= 255 ? 255 : (colour.g <= 0 ? 0 : colour.g));
+  colour.b = (colour.b >= 255 ? 255 : (colour.b <= 0 ? 0 : colour.b));
+
+  this.currentColour = colour;
+
+  return colour;
+};
+
+GestureSource.prototype.chooseRandom = function (r, g, b) {
+
+  var random = (Math.random() * 100) - 25;
+
+  r += random;
+  g += random;
+  b += random;
+
+  r = (r > 255 ? 255 : (r < 0 ? 0 : r));
+  g = (g > 255 ? 255 : (g < 0 ? 0 : g));
+  b = (b > 255 ? 255 : (b < 0 ? 0 : b));
+
+  return {
+    r: r,
+    g: g,
+    b: b
+  };
 };
 
 GestureSource.prototype.clear = function () {
