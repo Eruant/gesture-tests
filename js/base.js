@@ -34,7 +34,28 @@ GestureSource.prototype.success = function (stream) {
   this.video.src = (window.webkitURL) ? window.webkitURL.createObjectURL(stream) : stream;
 
   this.createCanvas();
+
+  var _this = this;
+  document.addEventListener("keydown", function (event) {
+    if (event.keyCode === 13) {
+      _this.requestFullScreen();
+    }
+  }, false);
   window.requestAnimationFrame(this.update.bind(this));
+};
+
+GestureSource.prototype.requestFullScreen = function () {
+
+  var el = this.canvas;
+  if (el.requestFullScreen) {
+    el.requestFullScreen();
+  } else if (el.msRequestFullScreen) {
+    el.msRequestFullScreen();
+  } else if (el.mozRequestFullScreen) {
+    el.mozRequastFullScreen();
+  } else if (el.webkitRequestFullScreen) {
+    el.webkitRequestFullScreen();
+  }
 };
 
 GestureSource.prototype.error = function () {
