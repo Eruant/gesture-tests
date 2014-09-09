@@ -1,104 +1,109 @@
-/*globals navigator, document, $, objectdetect*/
+/*globals navigator, VideoFeed, Overlay, $, objectdetect*/
 
 navigator.getUserMedia = (navigator.getUserMedia ||
   navigator.mozGetUserMedia ||
   navigator.webkitGetUserMedia ||
   navigator.msGetUserMedia || undefined);
 
-var GestureSource = function (id) {
+(function (win, doc) {
 
-  if (!navigator.getUserMedia) {
-    return false;
-  }
+  var video, overlay, state;
 
-  this.el = id;
-
-  navigator.getUserMedia({
-    video: true,
-    audio: false
-  }, this.success.bind(this), this.error.bind(this));
-
-};
-
-GestureSource.prototype.success = function (stream) {
-
-  this.video = document.getElementById(this.el);
-
-  this.video.autoplay = true;
-  this.video.src = (window.webkitURL) ? window.webkitURL.createObjectURL(stream) : stream;
-
-  this.createCanvas();
-  window.requestAnimationFrame(this.play.bind(this));
-};
-
-GestureSource.prototype.error = function () {
-  window.alert('No media avalable');
-};
-
-GestureSource.prototype.createCanvas = function () {
-
-  this.canvas = document.createElement('canvas');
-  this.canvas.width = this.video.width || 640;
-  this.canvas.height = this.video.height || 480;
-  this.ctx = this.canvas.getContext('2d');
-
-  document.getElementsByTagName('body')[0].appendChild(this.canvas);
-};
-
-GestureSource.prototype.play = function () {
-
-  var _this = this;
-
-  this.clear();
-
-  $(this.video).objectdetect("all", {
-    classifier: objectdetect.handopen
-  }, function (coords) {
-    _this.render('hand', coords);
-  });
-
-  //$(this.video).objectdetect("all", {
-    //classifier: objectdetect.handfist
-  //}, function (coords) {
-    //_this.render('fist', coords);
-  //});
-
-  //$(this.video).objectdetect("all", {
-    //classifier: objectdetect.eye
-  //}, function (coords) {
-    //_this.render('eye', coords);
-  //});
-
-  window.requestAnimationFrame(this.play.bind(this));
-
-};
-
-GestureSource.prototype.clear = function () {
-  this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-};
-
-GestureSource.prototype.render = function (type, coords) {
-
-  var i, len, item;
-
-  i = 0;
-  len = coords.length;
-
-  for (; i < len; i++) {
-    item = coords[i];
-    switch (type) {
-      case 'eye':
-        this.ctx.fillStyle = 'rgba(0, 50, 255, 0.3)';
-        break;
-      case 'fist':
-        this.ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
-        break;
-      default:
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-        break;
+  state = {
+    play: true,
+    fist: {
+      active: false,
+      startPoint: false
     }
-    this.ctx.fillRect(item[0], item[1], item[2], item[3]);
-  }
-};
+  };
 
-var app = new GestureSource('webcam');
+  var videoCreated = function (videoElement) {
+
+    video = videoElement;
+
+    overlay = Overlay({
+      update: overlayUpdate
+    });
+
+    doc.getElementsByTagName('body')[0].appendChild(video);
+    doc.getElementsByTagName('body')[0].appendChild(overlay.canvas);
+    overlay.start();
+
+  };
+
+  var render = function (type, coords) {
+
+    var i, len, item;
+
+    i = 0;
+    len = coords.length;
+    for (; i < len; i++) {
+      item = coords[i];
+
+      switch (type) {
+
+        case 'face':
+
+          // ignore small objects
+          if (item[2] > 100) {
+
+            if (state.play) {
+              overlay.ctx.fillStyle = 'rgba(50, 255, 50, 0.3)';
+            } else {
+              overlay.ctx.fillStyle = 'rgba(255, 50, 50, 0.3)';
+            }
+            overlay.ctx.fillRect(item[0], item[1], item[2], item[3]);
+
+          }
+
+          break;
+
+        case 'fist':
+
+          if (item[2] > 80) {
+
+            overlay.ctx.fillStyle = 'rgba(50, 50, 255, 0.3)';
+            overlay.ctx.fillRect(item[0], item[1], item[2], item[3]);
+
+          }
+
+          break;
+      }
+
+    }
+  };
+
+  var overlayUpdate = function () {
+    overlay.ctx.clearRect(0, 0, overlay.canvas.width, overlay.canvas.height);
+    state.play = false;
+
+    // this only works if the video on on the page...
+    $(video).objectdetect("all", {
+      classifier: objectdetect.handfist
+    }, function (coords) {
+      render('fist', coords);
+    });
+
+    $(video).objectdetect("all", {
+      classifier: objectdetect.frontalface
+    }, function (coords) {
+
+      var i, len;
+
+      if (coords.length > 0) {
+        i = 0;
+        len = coords.length;
+        for (; i < len; i++) {
+          if (coords[i][2] > 100) {
+            state.play = true;
+          }
+        }
+      }
+      render('face', coords);
+    });
+
+  };
+
+  VideoFeed(videoCreated);
+
+}(window, window.document));
