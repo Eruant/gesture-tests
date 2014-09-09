@@ -11,10 +11,7 @@ navigator.getUserMedia = (navigator.getUserMedia ||
 
   state = {
     play: true,
-    fist: {
-      active: false,
-      startPoint: false
-    }
+    fists: []
   };
 
   var videoCreated = function (videoElement) {
@@ -33,7 +30,7 @@ navigator.getUserMedia = (navigator.getUserMedia ||
 
   var render = function (type, coords) {
 
-    var i, len, item;
+    var i, len, item, difference, direction;
 
     i = 0;
     len = coords.length;
@@ -60,17 +57,38 @@ navigator.getUserMedia = (navigator.getUserMedia ||
 
         case 'fist':
 
-          if (item[2] > 80) {
+          if (state.fists.length > 0) {
+            if (typeof state.fists[i] !== 'undefined') {
 
-            overlay.ctx.fillStyle = 'rgba(50, 50, 255, 0.3)';
-            overlay.ctx.fillRect(item[0], item[1], item[2], item[3]);
+              difference = state.fists[i][0] - item[0];
+              direction = (difference < 0) ? 'left' : 'right';
+              if (difference < 0) {
+                difference = -difference;
+              }
 
+              if (direction === 'left') {
+                if (difference > 50) {
+                  overlay.ctx.fillStyle = 'rgba(50, 50, 200, 1)';
+                } else {
+                  overlay.ctx.fillStyle = 'rgba(50, 50, 255, 0.5)';
+                }
+              } else {
+                if (difference > 50) {
+                  overlay.ctx.fillStyle = 'rgba(50, 200, 50, 1)';
+                } else {
+                  overlay.ctx.fillStyle = 'rgba(50, 255, 50, 0.5)';
+                }
+              }
+
+              overlay.ctx.fillRect(item[0], item[1], item[2], item[3]);
+            }
           }
 
           break;
       }
 
     }
+
   };
 
   var overlayUpdate = function () {
@@ -82,6 +100,7 @@ navigator.getUserMedia = (navigator.getUserMedia ||
       classifier: objectdetect.handfist
     }, function (coords) {
       render('fist', coords);
+      state.fists = coords;
     });
 
     $(video).objectdetect("all", {
